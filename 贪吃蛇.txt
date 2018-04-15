@@ -1,0 +1,965 @@
+// 蛇一号.cpp: 定义控制台应用程序的入口点。
+//
+
+#include "stdafx.h"
+
+
+#include<stdio.h>
+#include<stdlib.h>
+#include<windows.h>
+#include<conio.h>
+#include<time.h>
+#define LEN sizeof(struct snake) 
+#define coord sizeof(struct coordinate)
+void chooselevel();
+void choose();
+void load();
+void save();
+void ranking();
+void Rankinglist();
+void color();
+void menu();
+void gotoxy(int x, int y);
+void inimap();
+void paintWall();
+void moveSnake();
+void Changedir();
+void GameOver();
+void iniSnake();
+void inifood();
+void inipoweed();
+void inibombe();
+void hideCursor();
+void release();
+void bitepoweed();
+void bitebombe();
+void bitefood1();
+void bitefood2();
+void tip();
+void printscore();
+void sayfood();
+void saybombe();
+void sayweed();
+void pause();
+void change1();
+void change2();
+int biteitself();
+FILE *fp,*mem;
+char dir;
+char map[28][81];
+int die = 0;
+int foods1 = 0, foods2 = 0;
+int weeds = 0;
+int score = 0;
+int bombes = 0;
+int n = 0;
+int judgeweed = 0;
+int bestscore[10];
+int changes = 0;
+int sleep = 200;
+int jubifood1=0;
+int jubifood2=0;
+int jubiweed=0;
+int jubibombe=0;
+int second=1;
+int level;
+typedef struct snake {
+	int x;
+	int y;
+	struct snake*next;
+} SNAKE;
+typedef struct coordinate {
+	int x;
+	int y;
+} COORDINATE;
+SNAKE *q, *head, *q1, *q2, *nexthead;
+COORDINATE *food1, *weed, *food2, *bombe;
+void inimap()
+{
+	int i, j;
+	for (i = 0; i < 28; i++)
+	{
+		for (j = 0; j < 81; j++)
+			map[i][j] = ' ';
+	}
+}
+void chooselevel()
+{
+	char key;
+	int option = 1;
+	gotoxy(15, 9);
+	printf("->正常无限模式");
+	gotoxy(15, 13);
+	printf("  闪现无限模式");
+	gotoxy(15, 17);
+	printf("  全闪现无限模式");
+	key = _getch();
+	while (key != ' ')
+	{
+		if (key == 'w'&&option > 1)
+		{
+			option--;
+			if (option == 1)
+			{
+				gotoxy(15, 9);
+				printf("->正常无限模式");
+				gotoxy(15, 13);
+				printf("  闪现无限模式");
+				gotoxy(15, 17);
+				printf("  全闪现无限模式");
+			}
+			if (option == 2)
+			{
+				gotoxy(15, 9);
+				printf("  正常无限模式");
+				gotoxy(15, 13);
+				printf("->闪现无限模式");
+				gotoxy(15, 17);
+				printf("  全闪现无限模式");
+			}
+
+		}
+		if (key == 's'&&option < 3)
+		{
+			option++;
+			if (option == 2)
+			{
+				gotoxy(15, 9);
+				printf("  正常无限模式");
+				gotoxy(15, 13);
+				printf("->闪现无限模式");
+				gotoxy(15, 17);
+				printf("  全闪现无限模式");
+			}
+			if (option == 3)
+			{
+				gotoxy(15, 9);
+				printf("  正常无限模式");
+				gotoxy(15, 13);
+				printf("  闪现无限模式");
+				gotoxy(15, 17);
+				printf("->全闪现无限模式");
+			}
+		}
+		key = _getch();
+	}
+	gotoxy(15, 9);
+	printf("                       ");
+	gotoxy(15, 13);
+	printf("                       ");
+	gotoxy(15, 17);
+	printf("                       ");
+	if (option == 1)
+		level=1;
+	if (option == 2)
+		level=2;
+	if (option == 3)
+		level=3;
+	iniSnake();
+}
+void choose()
+{
+	char key;
+	int option = 1;
+	gotoxy(15, 9);
+	printf("->新的开始");
+	gotoxy(15, 13);
+	printf("  继续旅途");
+	gotoxy(15, 17);
+	printf("  排行榜                              ");
+	key = _getch();
+	while (key!=' ')
+	{
+		if (key == 'w'&&option > 1)
+		{
+			option--;
+			if (option ==1)
+			{
+				gotoxy(15, 9);
+				printf("->新的开始");
+				gotoxy(15, 13);
+				printf("  继续旅途");
+				gotoxy(15, 17);
+				printf("  排行榜");
+			}
+			if (option == 2)
+			{
+				gotoxy(15, 9);
+				printf("  新的开始");
+				gotoxy(15, 13);
+				printf("->继续旅途");
+				gotoxy(15, 17);
+				printf("  排行榜");
+			}
+			
+		}
+		if (key == 's'&&option < 3)
+		{
+			option++;
+			if (option == 2)
+			{
+				gotoxy(15, 9);
+				printf("  新的开始");
+				gotoxy(15, 13);
+				printf("->继续旅途");
+				gotoxy(15, 17);
+				printf("  排行榜");
+			}
+			if (option == 3)
+			{
+				gotoxy(15, 9);
+				printf("  新的开始");
+				gotoxy(15, 13);
+				printf("  继续旅途");
+				gotoxy(15, 17);
+				printf("->排行榜");
+			}
+		}
+		key = _getch();
+	}
+	gotoxy(15, 9);
+	printf("          ");
+	gotoxy(15, 13);
+	printf("          ");
+	gotoxy(15, 17);
+	printf("          ");
+	if (option == 1)
+		chooselevel();
+	if (option == 2)
+		load();
+	if (option == 3)
+		Rankinglist();
+}
+void save()
+{
+	SNAKE *p = NULL;
+	if (fopen_s(&mem, "memory.dat", "wb") != NULL)
+		exit(1);
+	else
+	{
+		fwrite(&food1, sizeof(struct coordinate), 1, mem);
+		fwrite(&food2, sizeof(struct coordinate), 1, mem);
+		fwrite(&weed, sizeof(struct coordinate), 1, mem);
+		fwrite(&bombe, sizeof(struct coordinate), 1, mem);
+		fwrite(&dir, sizeof(char), 1, mem);
+		fwrite(&score, sizeof(int), 1, mem);
+		for (p = head; p != NULL; p = p->next)
+			fwrite(&p, sizeof(struct snake), 1, mem);
+		fclose(mem);
+	}
+		
+}
+void load()
+{
+	SNAKE *p1, *p2;
+	p1 = (SNAKE*)malloc(LEN);
+	p2= (SNAKE*)malloc(LEN);
+	if ((fopen_s(&mem, "memory.dat", "rb")) != NULL)
+	{
+		exit(1);
+	}
+	else
+	{
+		fread(&food1, sizeof(struct coordinate), 1, mem);
+		fread(&food2, sizeof(struct coordinate), 1, mem);
+		fread(&weed, sizeof(struct coordinate), 1, mem);
+		fread(&bombe, sizeof(struct coordinate), 1, mem);
+		fread(&dir, sizeof(char), 1, mem);
+		fread(&score, sizeof(int), 1, mem);
+		fread(&p1, sizeof(struct snake), 1, mem);
+		for (int i = 0; i < score + 1; i++)
+		{
+			p1= (SNAKE*)malloc(LEN);
+			p2->next = p1;
+			p2 = p1;
+			fread(&p1, sizeof(struct snake), 1, mem);
+		}
+		p1->next = head;
+		fclose(mem);
+	}
+		for (p1 = head; p1->next != NULL; p1 = p1->next)
+		{
+			p1 = (SNAKE*)malloc(LEN);
+			gotoxy(p1->x, p1->y);
+			printf("●");
+			map[p1->y][p1->x] = '*';
+		}
+		food1 = (COORDINATE*)malloc(coord);
+		gotoxy(food1->x, food1->y);
+		printf("★");
+		map[food1->y][food1->x] = '*';
+		foods1 = 1;
+		food2 = (COORDINATE*)malloc(coord);
+		gotoxy(food2->x, food2->y);
+		printf("★");
+		map[food2->y][food2->x] = '*';
+		foods2 = 1;
+		bombe = (COORDINATE*)malloc(coord);
+		gotoxy(bombe->x, bombe->y);
+		printf("◆");
+		map[bombe->y][bombe->x] = '*';
+		bombes = 1;
+		weed = (COORDINATE*)malloc(coord);
+		gotoxy(weed->x, weed->y);
+		printf("☆");
+		map[weed->y][weed->x] = '*';
+		weeds = 1;
+	
+}
+void color(const unsigned short color1)
+{
+	if (color1 >= 0 && color1 <= 150)
+		SetConsoleTextAttribute(GetStdHandle(STD_ERROR_HANDLE), color1);
+	else
+		SetConsoleTextAttribute(GetStdHandle(STD_ERROR_HANDLE), 7);
+}
+void pause()
+{
+	while (1)
+	{
+		Sleep(300);
+		if (GetAsyncKeyState(VK_SPACE))
+		{
+			break;
+		}
+	}
+}
+void menu()
+{
+	int i;
+	fp = fopen("score.txt", "r");
+	for (i = 0; !feof(fp); i++)
+		fscanf(fp, "%d", &bestscore[i]);
+	fclose(fp);
+	gotoxy(14, 5);
+	color(13);
+	printf("请确定将输入法改为英文");
+	gotoxy(15, 7);
+	color(9);
+	printf("因为他是条歪果蛇");
+	color(1);
+	gotoxy(15, 9);
+	printf("按空格键开始游戏");
+	color(10);
+	gotoxy(16, 11);
+	printf("历史最高分：%d", bestscore[0]);
+	char ch = _getch();
+	
+	while (ch != ' ')
+	{
+		ch = _getch();
+	}
+	system("cls");
+}
+void tip()
+{
+	gotoxy(85, 6);
+	printf("按esc退出，按空格开始与暂停");
+	gotoxy(85, 8);
+	printf("'w'向上，'s'向下，'a'向左，'d'向右");
+	gotoxy(85, 10);
+	printf("'q'左上，'e'右上，'z'左下，'c'右下");
+	gotoxy(85, 12);
+	printf("★蛋蛋");
+	gotoxy(85, 14);
+	printf("☆毒草");
+	gotoxy(85, 16);
+	printf("◆炸弹");
+}
+void release()
+{
+	q1 = head; q2 = head;
+	while (q1->next != NULL)
+	{
+		q2 = q1->next;
+		free(q1);
+		q1 = q2;
+	}
+	free(q1);
+}
+void printscore()
+{
+	gotoxy(85, 16);
+	printf("               ");
+	gotoxy(85, 16);
+	printf("您的分数是：%d", score);
+}
+void sayfood()
+{
+	if(score<=2)
+		printf("最好的食物，永远是下一个!");
+	if (score > 2 && score <= 5)
+		printf("为什么会痛苦，一直吃就好了");
+	if (score > 5 && score <= 10)
+		printf("爱恨痴狂，比不过大吃特吃");
+	if (score > 10)
+		printf("不为所爱之尾哭泣，只因从未离去");
+}
+void saybombe()
+{
+	if(score<=5)
+		printf("炸弹会带走你尾巴曾经存在过的证明");
+	if (score > 5)
+		printf("花有再开的那天，尾巴有重逢的时候吗？");
+}
+void sayweed()
+{
+	if(score<5&&judgeweed<=1)
+		printf("伤心不是哭的理由，短才是！");
+	if (score>=5&&judgeweed<=1)
+		printf("没有尾巴，就不会受伤");
+	if (judgeweed >=2)
+		printf("离家太远会忘了故乡，涉毒太多会忘了自己");
+}
+void hideCursor()
+{
+	CONSOLE_CURSOR_INFO cursor_info = { 1,0 };
+	SetConsoleCursorInfo(GetStdHandle(STD_OUTPUT_HANDLE), &cursor_info);
+}
+void gotoxy(int x, int y)
+{
+	COORD pos;
+	pos.X = x;
+	pos.Y = y;
+	SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), pos);
+}
+int biteitself(SNAKE *s)
+{
+	q = head;
+	while (q != NULL)
+	{
+		if (q->x == s->x&&q->y == s->y)
+			return 1;
+		q = q->next;
+	}
+	return 0;
+}
+void bitefood1()
+{
+	free(food1);
+	nexthead->next = head;
+	head = nexthead;
+	q = head;
+	while (q != NULL)
+	{
+		gotoxy(q->x, q->y);
+		printf("●");
+		map[q->y][q->x] = '*';
+		q = q->next;
+	}
+	foods1 = 0;
+	judgeweed = 0;
+	score++;
+	gotoxy(82, 18);
+	printf("                                      ");
+	gotoxy(82, 18);
+	sayfood();
+}
+void bitefood2()
+{
+	free(food2);
+	nexthead->next = head;
+	head = nexthead;
+	q = head;
+	while (q != NULL)
+	{
+		gotoxy(q->x, q->y);
+		printf("●");
+		map[q->y][q->x] = '*';
+		q = q->next;
+	}
+	foods2 = 0;
+	judgeweed = 0;
+	score++;
+	gotoxy(82, 18);
+	printf("                                      ");
+	gotoxy(82, 18);
+	sayfood();
+}
+void bitepoweed()
+{
+	free(weed);
+	nexthead->next = head;
+	head = nexthead;
+	q = head;
+	while (q->next->next->next != NULL)
+	{
+		gotoxy(q->x, q->y);
+		printf("●");
+		map[q->y][q->x] = '*';
+		q = q->next;
+	}
+	gotoxy(q->next->next->x, q->next->next->y);
+	printf("  ");
+	map[q->next->next->y][q->next->next->x] = ' ';
+	free(q->next->next);
+	q->next->next = NULL;
+	gotoxy(q->next->x, q->next->y);
+	printf("  ");
+	map[q->next->y][q->next->x] = ' ';
+	free(q->next);
+	q->next = NULL;
+	weeds = 0;
+	judgeweed++;
+	score--;
+	gotoxy(82, 18);
+	printf("                                      ");
+	gotoxy(82, 18);
+	sayweed();
+}
+void bitebombe()
+{
+	free(bombe);
+	for (int i = 0; i <= score / 2; i++)
+	{
+		q = head;
+		while (q->next->next != NULL)
+		{
+			gotoxy(q->x, q->y);
+			printf("●");
+			map[q->y][q->x] = '*';
+			q = q->next;
+		}
+		gotoxy(q->next->x, q->next->y);
+		printf("  ");
+		map[q->next->y][q->next->x] = ' ';
+		free(q->next);
+		q->next = NULL;
+	}
+	bombes = 0;
+	judgeweed = 0;
+	gotoxy(82, 18);
+	printf("                                      ");
+	gotoxy(82, 18);
+	saybombe();
+	score = score - score / 2 - 1;
+}
+void inifood()
+{
+	if (foods1 == 0)
+	{
+		food1 = (COORDINATE*)malloc(coord);
+		int judge1 = 0;
+		do
+		{
+			food1->x = rand() % (39) * 2;
+			food1->y = rand() % (13) * 2;
+			if (map[food1->y][food1->x] != ' ')
+				judge1 = 1;
+		} while (judge1 == 1 || food1->y <= 0 || food1->y >= 28 || food1->x <= 0 || food1->x >= 81);
+		gotoxy(food1->x, food1->y);
+		printf("★");
+		map[food1->y][food1->x] = '*';
+		foods1 = 1;
+	}
+	if (foods2 == 0)
+	{
+		food2 = (COORDINATE*)malloc(coord);
+		int judge2 = 0;
+		do
+		{
+			food2->x = rand() % (39) * 2;
+			food2->y = rand() % (13) * 2;
+			if (map[food2->y][food2->x] != ' ')
+				judge2= 1;
+		} while (judge2 == 1 || food2->y <= 0 || food2->y >= 28 || food2->x <= 0 || food2->x >= 81);
+		gotoxy(food2->x, food2->y);
+		printf("★");
+		map[food2->y][food2->x] = '*';
+		foods2 = 1;
+	}
+}
+void inipoweed()
+{
+	weed = (COORDINATE*)malloc(coord);
+	int judge3 = 0;
+	do
+	{
+		weed->x = rand() % (39) * 2;
+		weed->y = rand() % (13) * 2;
+		if (map[weed->y][weed->x] != ' ')
+			judge3 = 1;
+	} while (judge3 == 1 || weed->y <= 0 || weed->y >= 28 || weed->x<= 0 || weed->x >= 81);
+	gotoxy(weed->x, weed->y);
+	printf("☆");
+	map[weed->y][weed->x] = '*';
+	weeds = 1;
+}
+void inibombe()
+{
+	bombe = (COORDINATE*)malloc(coord);
+	int judge4 = 0;
+	do
+	{
+		bombe->x = rand() % (390 / 10) * 2;
+		bombe->y = rand() % (120 / 10) * 2;
+		if (map[bombe->y][bombe->x] != ' ')
+			judge4= 1;
+	} while (judge4 == 1 || bombe->y <= 0 || bombe->y >= 28 || bombe->x <= 0 || bombe->x >= 81);
+	gotoxy(bombe->x, bombe->y);
+	printf("◆");
+	map[bombe->y][bombe->x]='*';
+	bombes = 1;
+}
+void paintWall()
+{
+	int i;
+	for (i = 0; i<81; i+=2) {
+		gotoxy(i, 0);
+		printf("※");
+		gotoxy(i, 28);
+		printf("※");
+	}
+	for (i = 1; i<28; i++) {
+		gotoxy(0, i);
+		printf("※");
+		gotoxy(80, i);
+		printf("※");
+	}
+}
+void iniSnake()
+{
+	SNAKE *t;
+	int i;
+	head = (SNAKE*)malloc(LEN);
+	head->x = 2;
+	head->y = 3;
+	head->next = NULL;
+	q = head;
+	for (i = 1; i<2; i++)
+	{
+		t = (SNAKE*)malloc(LEN);
+		t->x = 2 + 2 * i;
+		t->y = 3;
+		q->next = t;
+	}
+	t->next = NULL;
+	q = head;
+	while (q != NULL)
+	{
+		gotoxy(q->x, q->y);
+		printf("●");
+		map[q->y][q->x] = '*';
+		q = q->next;
+	}
+	dir = 's';
+}
+void moveSnake()
+{
+	nexthead = (SNAKE*)malloc(LEN);
+	switch (dir)
+	{
+	case'd':
+		nexthead->x = head->x + 2;
+		nexthead->y = head->y;
+		break;
+	case's':
+		nexthead->x = head->x;
+		nexthead->y = head->y + 1;
+		break;
+	case'a':
+		nexthead->x = head->x - 2;
+		nexthead->y = head->y;
+		break;
+	case'w':
+		nexthead->x = head->x;
+		nexthead->y = head->y - 1;
+		break;
+	case'q':
+		nexthead->x = head->x-2;
+		nexthead->y = head->y - 1;
+		break;
+	case'e':
+		nexthead->x = head->x + 2;
+		nexthead->y = head->y - 1;
+		break;
+	case'z':
+		nexthead->x = head->x - 2;
+		nexthead->y = head->y + 1;
+		break;
+	case'c':
+		nexthead->x = head->x + 2;
+		nexthead->y = head->y +1;
+		break;
+	default:break;
+	}
+	if (nexthead->x == 80 || nexthead->x == 0 || nexthead->y == 0 || nexthead->y == 28)
+		die = 1;
+	else if (biteitself(nexthead) == 1)
+		die = 2;
+	else if (nexthead->x == food1->x&&nexthead->y == food1->y)
+	{
+		changes = 0;
+		jubifood1 = 1;
+		bitefood1();
+	}
+	else if (nexthead->x == food2->x&&nexthead->y == food2->y)
+	{
+		changes = 0;
+		jubifood2 = 1;
+		bitefood2();
+	}
+	else if (nexthead->x == weed->x&&nexthead->y == weed->y&&score != 0)
+	{
+		changes = 0;
+		jubiweed = 1;
+		bitepoweed();
+	}
+	else if (nexthead->x == bombe->x&&nexthead->y == bombe->y&&score != 0)
+	{
+		changes = 0;
+		jubibombe = 1;
+		bitebombe();
+	}
+	else if (nexthead->x == weed->x&&nexthead->y == weed->y&&score == 0)
+		die = 3;
+	else if (nexthead->x == bombe->x&&nexthead->y == bombe->y&&score == 0)
+		die = 4;
+	else
+	{
+		nexthead->next = head;
+		head = nexthead;
+		q = head;
+		while (q->next->next != NULL)
+		{
+			gotoxy(q->x, q->y);
+			printf("●");
+			map[q->y][q->x] = '*';
+			q = q->next;
+		}
+		gotoxy(q->next->x, q->next->y);
+		printf("  ");
+		map[q->next->y][q->next->x] = ' ';
+		free(q->next);
+		q->next = NULL;
+	}
+	hideCursor();
+}
+void Changedir()
+{
+	char ch;
+	ch = _getch();
+	switch (ch)
+	{
+	case'w':
+		if (dir != 's')
+			dir = 'w';
+		break;
+	case's':
+		if (dir != 'w')
+			dir = 's';
+		break;
+	case'a':
+		if (dir != 'd')
+			dir = 'a';
+		break;
+	case'd':
+		if (dir != 'a')
+			dir = 'd';
+		break;
+	case'e':
+		if (dir != 'z')
+			dir = 'e';
+		break;
+	case'q':
+		if (dir != 'c')
+			dir = 'q';
+		break;
+	case'z':
+		if (dir != 'e')
+			dir = 'z';
+		break;
+	case'c':
+		if (dir != 'q')
+			dir = 'c';
+		break;
+	default:break;
+	}
+}
+void change1()
+{
+	if(changes == 20&&jubifood1==0)
+	{
+		foods1 = 0;
+		gotoxy(food1->x, food1->y);
+		printf("  ");
+		map[food1->y][food1->x] = ' ';
+	}
+	else if (changes == 30 && jubifood2 == 0)
+	{
+		foods2 = 0;
+		gotoxy(food2->x, food2->y);
+		printf("  ");
+		map[food2->y][food2->x] = ' ';
+	}
+	else if (changes ==40&& jubiweed==0)
+	 {
+		 weeds = 0;
+		 gotoxy(weed->x, weed->y);
+		 printf("  ");
+		 map[weed->y][weed->x] = ' ';
+	 }
+	else if (changes ==50&&jubibombe==0)
+	 {
+		 bombes = 0;
+		 gotoxy(bombe->x, bombe->y);
+		 printf("  ");
+		 map[bombe->y][bombe->x] = ' ';
+		 changes = 0;
+	 }
+}
+void change2()
+{
+	if (changes == second)
+	{
+		foods1 = 0;
+		gotoxy(food1->x, food1->y);
+		printf("  ");
+		map[food1->y][food1->x] = ' ';
+		free(food1);
+		foods2 = 0;
+		gotoxy(food2->x, food2->y);
+		printf("  ");
+		map[food2->y][food2->x] = ' ';
+		free(food2);
+		weeds = 0;
+		gotoxy(weed->x, weed->y);
+		printf("  ");
+		map[weed->y][weed->x] = ' ';
+		free(weed);
+		bombes = 0;
+		gotoxy(bombe->x, bombe->y);
+		printf("  ");
+		map[bombe->y][bombe->x] = ' ';
+		free(bombe);
+		changes = 0;
+	}
+		n = 0;
+}
+void ranking()
+{
+	int a[11], i,j,t;
+	fp = fopen("score.txt", "r");
+	for (i = 0; !feof(fp); i++)
+		fscanf(fp, "%d", &a[i]);
+	fclose(fp);
+	a[10] = score;
+	for (j = 0; j<10; j++)
+		for (i = 0; i < 10 - j; i++)
+			if (a[i]<a[i + 1])
+			{
+				t = a[i]; a[i] = a[i + 1]; a[i + 1] = t;
+			}
+	fp = fopen("score.txt", "w");
+	for (i = 0; i<10; i++)
+		fprintf(fp, "%d\n", a[i]);
+	fclose(fp);
+}
+void Rankinglist()
+{
+	int a[11], i;
+	fp = fopen("score.txt", "r");
+	for (i = 0; !feof(fp); i++)
+		fscanf(fp, "%d", &a[i]);
+	fclose(fp);
+	for (i = 0; i < 10; i++)
+		printf("%d ", a[i]);
+	char ch = _getch();
+	if (ch == ' ')
+		choose();
+}
+void GameOver()
+{
+	system("cls");
+	gotoxy(15, 5);
+	if(die==1)
+	    printf("还没有输\n");
+	if (die == 2)
+		printf("啊~开玩笑吧\n");
+	if (die == 3)
+		printf("无可避免的腐朽\n");
+	if (die == 4)
+		printf("最后一次失约\n");
+	if (die == 5)
+		printf("愚蠢的退出");
+	gotoxy(15, 7);
+	printf("您的成绩为：%d\n", score);
+	int i;
+	fp = fopen("score.txt", "r");
+	for (i = 0; !feof(fp); i++)
+		fscanf(fp, "%d", &bestscore[i]);
+	fclose(fp);
+	if (score > bestscore[0])
+	{
+		bestscore[0] = score;
+		gotoxy(15, 9);
+		printf("成功就是不断的进步");
+	}
+	else
+	{
+		gotoxy(15, 9);
+		printf("失败，是为了更好的成功");
+	}
+	gotoxy(15, 11);
+	printf("目前最高分：%d\n",bestscore[0]);
+	ranking();
+	system("pause");
+	exit(0);
+}
+int main()
+{
+	inimap();
+	menu();
+	tip();
+	paintWall();
+	choose();
+	while (die == 0)
+	{
+		while (!_kbhit() && die == 0)
+		{
+			srand((unsigned)time(NULL));
+			if (foods1 == 0 || foods2 == 0)
+			{
+				inifood();
+			}
+			if (weeds == 0)
+			{
+				inipoweed();
+			}
+			if (bombes == 0)
+			{
+				inibombe();
+			}
+			moveSnake();
+			n++;
+			changes++;
+			if(level==2)
+			    change1();
+			if (level==3)
+				change2();
+			printscore();
+			if (score <= 15)
+				second = 20;
+			else
+				second = 10;
+			if (sleep >= 50)
+				sleep = 200 - score * 5;
+			Sleep(sleep);
+			jubibombe = 0; jubifood1 = 0; jubifood2 = 0; jubiweed = 0;
+			if (GetAsyncKeyState(VK_SPACE))
+			{
+				pause();
+			}
+			if (GetAsyncKeyState(VK_ESCAPE))
+			{
+				save();
+				die = 5;
+			}
+		}
+		Changedir();
+	}
+	release();
+	GameOver();
+	getchar();
+}
+				
